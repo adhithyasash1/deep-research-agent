@@ -12,7 +12,10 @@
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:adhithyasash1/deep-research-agent:*"
+          "token.actions.githubusercontent.com:sub": [
+            "repo:adhithyasash1/deep-research-agent:*",
+            "repo:adhithyasash1@70097892/deep-research-agent@1328781324:*"
+          ]
         }
       }
     }
