@@ -1,0 +1,24 @@
+# Deep Research ALB
+# Region: eu-north-1
+# VPC: vpc-0341928e5d51f9f5b
+#
+# Security groups
+#   ALB: sg-03317db026cd063b5  (deep-research-alb)  - inbound :80 from your IP
+#   API: sg-0b04b3ba2c89944d7  (deep-research-api)  - inbound :8000 from ALB SG
+#
+# Target group
+#   arn:aws:elasticloadbalancing:eu-north-1:139675292967:targetgroup/deep-research-api/0c0b8b19f3612769
+#   type=ip, port=8000, health=/health
+#
+# Load balancer
+#   arn:aws:elasticloadbalancing:eu-north-1:139675292967:loadbalancer/app/deep-research-api/29a8193d98418081
+#   DNS: deep-research-api-309977771.eu-north-1.elb.amazonaws.com
+#   subnets: subnet-0d9cfff47da4e93b7 (1a), subnet-0320effc18ba1005f (1b)
+#
+# Listener
+#   arn:aws:elasticloadbalancing:eu-north-1:139675292967:listener/app/deep-research-api/29a8193d98418081/a79fb3f23c036775
+#   HTTP :80 -> target group
+#
+# Stable URL (after targets healthy):
+#   http://deep-research-api-309977771.eu-north-1.elb.amazonaws.com/health
+#   http://deep-research-api-309977771.eu-north-1.elb.amazonaws.com/docs

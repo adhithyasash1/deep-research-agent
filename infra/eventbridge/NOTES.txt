@@ -1,0 +1,22 @@
+# EventBridge - deep-research
+# Region: eu-north-1
+#
+# Event bus:
+#   deep-research
+#   arn:aws:events:eu-north-1:139675292967:event-bus/deep-research
+#
+# Rule:
+#   research-job-alerts
+#   pattern: source=deep.research.agent, detail-type=ResearchCompleted|ResearchFailed
+#   target: SNS deep-research-alerts
+#
+# Publisher:
+#   ECS worker (helpers/events.py) after job success/failure
+#
+# Smoke test:
+#   aws events put-events --region eu-north-1 --entries '[{
+#     "EventBusName":"deep-research",
+#     "Source":"deep.research.agent",
+#     "DetailType":"ResearchCompleted",
+#     "Detail":"{\"job_id\":\"x\",\"status\":\"COMPLETED\"}"
+#   }]'

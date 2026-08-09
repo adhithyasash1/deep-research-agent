@@ -1,0 +1,100 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Custom job metrics",
+        "region": "eu-north-1",
+        "metrics": [
+          ["DeepResearchAgent", "JobsEnqueued", "Service", "api"],
+          [".", "JobsCompleted", "Service", "worker"],
+          [".", "JobsFailed", "Service", "worker"],
+          [".", "JobsReceived", "Service", "worker"]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 60,
+        "stat": "Sum"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "SQS queue depth",
+        "region": "eu-north-1",
+        "metrics": [
+          [
+            "AWS/SQS",
+            "ApproximateNumberOfMessagesVisible",
+            "QueueName",
+            "deep-research-jobs"
+          ],
+          [
+            ".",
+            "ApproximateNumberOfMessagesVisible",
+            "QueueName",
+            "deep-research-jobs-dlq"
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 60,
+        "stat": "Average"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "ECS running tasks",
+        "region": "eu-north-1",
+        "metrics": [
+          [
+            "ECS/ContainerInsights",
+            "RunningTaskCount",
+            "ClusterName",
+            "deep-research-agent",
+            "ServiceName",
+            "deep-research-worker"
+          ],
+          [
+            ".",
+            "RunningTaskCount",
+            "ClusterName",
+            "deep-research-agent",
+            "ServiceName",
+            "deep-research-api"
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 60,
+        "stat": "Average"
+      }
+    },
+    {
+      "type": "log",
+      "x": 12,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "title": "Recent job events",
+        "region": "eu-north-1",
+        "query": "SOURCE '/ecs/deep-research-worker' | SOURCE '/ecs/deep-research-api'\n| fields @timestamp, @message\n| filter @message like /job_/\n| sort @timestamp desc\n| limit 50",
+        "view": "table"
+      }
+    }
+  ]
+}

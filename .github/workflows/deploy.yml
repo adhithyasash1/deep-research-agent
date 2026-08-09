@@ -1,0 +1,113 @@
+name: Deploy
+
+# Manual only — avoids burning AWS credits on every push.
+# Builds linux/arm64, pushes to ECR, registers ECS task defs, optionally scales up.
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "ECR image tag (empty = short git sha)"
+        required: false
+        default: ""
+      scale_up:
+        description: "Set API + worker desiredCount to 1 after deploy"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: deep-research-agent
+  ECS_CLUSTER: deep-research-agent
+  AWS_ACCOUNT_ID: "139675292967"
+
+jobs:
+  deploy:
+    name: Build and deploy to ECS
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: meta
+        run: |
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="$(echo "${{ github.sha }}" | cut -c1-12)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Using image tag: $TAG"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::139675292967:role/deep-research-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY"
+          docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+          docker push "$IMAGE:$TAG"
+          docker push "$IMAGE:latest"
+          echo "IMAGE=$IMAGE:$TAG" >> "$GITHUB_ENV"
+
+      - name: Register task definitions
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          IMAGE: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          for DEF in api worker; do
+            SRC="infra/ecs/${DEF}-task-definition.json"
+            TMP=$(mktemp)
+            python3 - <<PY
+          import json
+          from pathlib import Path
+          src = Path("$SRC")
+          data = json.loads(src.read_text())
+          image = "$IMAGE:$TAG"
+          for c in data["containerDefinitions"]:
+              c["image"] = image
+          Path("$TMP").write_text(json.dumps(data))
+          print(f"{src.name} -> {image}")
+          PY
+            REV=$(aws ecs register-task-definition \
+              --cli-input-json "file://$TMP" \
+              --query 'taskDefinition.taskDefinitionArn' --output text)
+            echo "Registered $REV"
+            aws ecs update-service \
+              --cluster "$ECS_CLUSTER" \
+              --service "deep-research-$DEF" \
+              --task-definition "$REV" \
+              --query 'service.serviceName' --output text
+            rm -f "$TMP"
+          done
+
+      - name: Scale services up
+        if: ${{ inputs.scale_up }}
+        run: |
+          for SVC in deep-research-api deep-research-worker; do
+            aws ecs update-service \
+              --cluster "$ECS_CLUSTER" \
+              --service "$SVC" \
+              --desired-count 1 \
+              --query 'service.{name:serviceName,desired:desiredCount}' --output json
+          done
+
+      - name: Summary
+        run: |
+          echo "### Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${{ env.IMAGE }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scale up: \`${{ inputs.scale_up }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Services stay at desiredCount=0 unless scale_up was true (saves credits)." >> "$GITHUB_STEP_SUMMARY"

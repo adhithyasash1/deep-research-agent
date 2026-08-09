@@ -1,0 +1,25 @@
+# Step Functions - deep-research-enqueue
+# Region: eu-north-1
+#
+# State machine:
+#   arn:aws:states:eu-north-1:139675292967:stateMachine:deep-research-enqueue
+#
+# Role:
+#   arn:aws:iam::139675292967:role/deep-research-sfn
+#
+# Flow:
+#   Prepare
+#     → CreateJob (DynamoDB)
+#         Catch → ErrorRouter (Choice)
+#           duplicate → NotifyDuplicate (SNS) → DuplicateJob (Fail)
+#           other    → NotifyFailed (SNS) → EnqueueFailed (Fail)
+#     → EnqueueJob (SQS)
+#     → NotifyQueued (SNS)
+#     → Done
+#
+# API path:
+#   POST /research → states:StartExecution → this machine
+#   Image: deep-research-agent:v2  (api task def revision 2+)
+#
+# SNS topic:
+#   arn:aws:sns:eu-north-1:139675292967:deep-research-alerts

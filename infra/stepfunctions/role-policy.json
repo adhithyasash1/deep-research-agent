@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DynamoDBPutJob",
+      "Effect": "Allow",
+      "Action": ["dynamodb:PutItem"],
+      "Resource": "arn:aws:dynamodb:eu-north-1:139675292967:table/deep-research-jobs"
+    },
+    {
+      "Sid": "SQSEnqueueJob",
+      "Effect": "Allow",
+      "Action": ["sqs:SendMessage"],
+      "Resource": "arn:aws:sqs:eu-north-1:139675292967:deep-research-jobs"
+    },
+    {
+      "Sid": "SNSAlerts",
+      "Effect": "Allow",
+      "Action": ["sns:Publish"],
+      "Resource": "arn:aws:sns:eu-north-1:139675292967:deep-research-alerts"
+    }
+  ]
+}

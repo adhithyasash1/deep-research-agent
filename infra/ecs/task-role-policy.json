@@ -1,0 +1,69 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadApiKeys",
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue"],
+      "Resource": "arn:aws:secretsmanager:eu-north-1:139675292967:secret:deep-research-agent/dev*"
+    },
+    {
+      "Sid": "WriteReports",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::deep-research-agent-139675292967-eu-north-1-an",
+        "arn:aws:s3:::deep-research-agent-139675292967-eu-north-1-an/*"
+      ]
+    },
+    {
+      "Sid": "JobState",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:Query"
+      ],
+      "Resource": "arn:aws:dynamodb:eu-north-1:139675292967:table/deep-research-jobs"
+    },
+    {
+      "Sid": "ResearchQueue",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "sqs:ChangeMessageVisibility",
+        "sqs:SendMessage"
+      ],
+      "Resource": [
+        "arn:aws:sqs:eu-north-1:139675292967:deep-research-jobs",
+        "arn:aws:sqs:eu-north-1:139675292967:deep-research-jobs-dlq"
+      ]
+    },
+    {
+      "Sid": "CloudWatchMetrics",
+      "Effect": "Allow",
+      "Action": ["cloudwatch:PutMetricData"],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "cloudwatch:namespace": "DeepResearchAgent"
+        }
+      }
+    },
+    {
+      "Sid": "StartEnqueueStateMachine",
+      "Effect": "Allow",
+      "Action": ["states:StartExecution"],
+      "Resource": "arn:aws:states:eu-north-1:139675292967:stateMachine:deep-research-enqueue"
+    },
+    {
+      "Sid": "PutResearchEvents",
+      "Effect": "Allow",
+      "Action": ["events:PutEvents"],
+      "Resource": "arn:aws:events:eu-north-1:139675292967:event-bus/deep-research"
+    }
+  ]
+}

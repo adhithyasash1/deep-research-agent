@@ -1,0 +1,40 @@
+{
+  "family": "deep-research-agent",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "ARM64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "arn:aws:iam::139675292967:role/deep-research-ecs-execution",
+  "taskRoleArn": "arn:aws:iam::139675292967:role/deep-research-ecs-task",
+  "containerDefinitions": [
+    {
+      "name": "agent",
+      "image": "139675292967.dkr.ecr.eu-north-1.amazonaws.com/deep-research-agent:v1",
+      "essential": true,
+      "environment": [
+        { "name": "AWS_REGION", "value": "eu-north-1" },
+        { "name": "AWS_DEFAULT_REGION", "value": "eu-north-1" },
+        { "name": "S3_BUCKET", "value": "deep-research-agent-139675292967-eu-north-1-an" },
+        { "name": "SECRETS_MANAGER_SECRET_ID", "value": "deep-research-agent/dev" },
+        { "name": "MODEL", "value": "google_genai:gemini-3.5-flash-lite" },
+        { "name": "JOBS_TABLE", "value": "deep-research-jobs" },
+        {
+          "name": "JOBS_QUEUE_URL",
+          "value": "https://sqs.eu-north-1.amazonaws.com/139675292967/deep-research-jobs"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/deep-research-agent",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "agent"
+        }
+      }
+    }
+  ]
+}

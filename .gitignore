@@ -27,6 +27,18 @@ htmlcov/
 .idea/
 .vscode/
 
-# Agent workspace artifacts
+# Agent artifacts (local staging only; durable copy lives in S3)
 .deepagents/
 *.log
+reports/**
+!reports/.gitkeep
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf

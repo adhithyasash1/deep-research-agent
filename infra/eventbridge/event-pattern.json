@@ -1,0 +1,4 @@
+{
+  "source": ["deep.research.agent"],
+  "detail-type": ["ResearchCompleted", "ResearchFailed"]
+}

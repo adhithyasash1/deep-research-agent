@@ -1,0 +1,78 @@
+{
+  "family": "deep-research-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512",
+  "runtimePlatform": {
+    "cpuArchitecture": "ARM64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "arn:aws:iam::139675292967:role/deep-research-ecs-execution",
+  "taskRoleArn": "arn:aws:iam::139675292967:role/deep-research-ecs-task",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "139675292967.dkr.ecr.eu-north-1.amazonaws.com/deep-research-agent:v4",
+      "essential": true,
+      "entryPoint": [
+        "uvicorn"
+      ],
+      "command": [
+        "api.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "eu-north-1"
+        },
+        {
+          "name": "AWS_DEFAULT_REGION",
+          "value": "eu-north-1"
+        },
+        {
+          "name": "S3_BUCKET",
+          "value": "deep-research-agent-139675292967-eu-north-1-an"
+        },
+        {
+          "name": "SECRETS_MANAGER_SECRET_ID",
+          "value": "deep-research-agent/dev"
+        },
+        {
+          "name": "JOBS_TABLE",
+          "value": "deep-research-jobs"
+        },
+        {
+          "name": "JOBS_QUEUE_URL",
+          "value": "https://sqs.eu-north-1.amazonaws.com/139675292967/deep-research-jobs"
+        },
+        {
+          "name": "STATE_MACHINE_ARN",
+          "value": "arn:aws:states:eu-north-1:139675292967:stateMachine:deep-research-enqueue"
+        },
+        { "name": "EVENT_BUS_NAME", "value": "deep-research" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/deep-research-api",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "api"
+        }
+      }
+    }
+  ]
+}

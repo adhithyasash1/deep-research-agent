@@ -1,0 +1,19 @@
+# Terraform - full stack (imported from hand-built AWS)
+#
+# Managed (can terraform destroy):
+#   DynamoDB, SQS(+DLQ), SNS(+email sub), EventBridge bus/rule/target
+#   ECR repo, CW log groups, IAM roles/policies
+#   Step Functions, ALB+TG+listener, SGs (alb/api)
+#   ECS cluster + API/worker services + task definitions
+#
+# NOT managed (kept safe):
+#   Default VPC / default SG / S3 bucket / Secrets Manager secret
+#
+# Day-end teardown:
+#   cd infra/terraform
+#   terraform plan -destroy
+#   terraform destroy
+#
+# Tip: scale services to 0 first if you want a quieter destroy:
+#   aws ecs update-service --cluster deep-research-agent --service deep-research-api --desired-count 0
+#   aws ecs update-service --cluster deep-research-agent --service deep-research-worker --desired-count 0

@@ -1,0 +1,20 @@
+# Optional local runner. Secrets stay out of the image.
+services:
+  agent:
+    build: .
+    image: deep-research-agent:local
+    environment:
+      AWS_REGION: ${AWS_REGION:-eu-north-1}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-north-1}
+      S3_BUCKET: ${S3_BUCKET:-deep-research-agent-139675292967-eu-north-1-an}
+      SECRETS_MANAGER_SECRET_ID: ${SECRETS_MANAGER_SECRET_ID:-deep-research-agent/dev}
+      MODEL: ${MODEL:-google_genai:gemini-3.5-flash-lite}
+      # Prefer mounting ~/.aws; or set these in your shell before compose up:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+    volumes:
+      # Reuse your local AWS profile credentials
+      - ${HOME}/.aws:/home/appuser/.aws:ro
+    # Example:
+    # docker compose run --rm agent "What is LangGraph?"

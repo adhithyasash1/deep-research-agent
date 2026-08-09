@@ -1,0 +1,11 @@
+# GitHub Actions (OIDC → AWS)
+#
+# Role: arn:aws:iam::139675292967:role/deep-research-github-actions
+# Repo: adhithyasash1/deep-research-agent
+#
+# Workflows:
+#   .github/workflows/ci.yml     — pytest on push/PR (no AWS)
+#   .github/workflows/deploy.yml — manual: build arm64 → ECR → ECS task defs
+#
+# Deploy from GitHub UI: Actions → Deploy → Run workflow
+#   scale_up=false (default) keeps services at 0 after registering new task defs

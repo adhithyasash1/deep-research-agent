@@ -1,0 +1,122 @@
+{
+  "Comment": "Enqueue research job with SNS alerts and Choice on errors",
+  "StartAt": "Prepare",
+  "States": {
+    "Prepare": {
+      "Type": "Pass",
+      "Comment": "Shape input and build the SQS ticket object",
+      "Parameters": {
+        "job_id.$": "$.job_id",
+        "question.$": "$.question",
+        "created_at.$": "$.created_at",
+        "ticket": {
+          "job_id.$": "$.job_id",
+          "question.$": "$.question"
+        }
+      },
+      "Next": "CreateJob"
+    },
+    "CreateJob": {
+      "Type": "Task",
+      "Comment": "Write job row to DynamoDB (QUEUED)",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "${jobs_table_name}",
+        "ConditionExpression": "attribute_not_exists(job_id)",
+        "Item": {
+          "job_id": { "S.$": "$.job_id" },
+          "question": { "S.$": "$.question" },
+          "status": { "S": "QUEUED" },
+          "created_at": { "S.$": "$.created_at" },
+          "updated_at": { "S.$": "$.created_at" }
+        }
+      },
+      "ResultPath": null,
+      "Next": "EnqueueJob",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "ErrorRouter"
+        }
+      ]
+    },
+    "EnqueueJob": {
+      "Type": "Task",
+      "Comment": "Put job ticket on SQS for the ECS worker",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "${jobs_queue_url}",
+        "MessageBody.$": "States.JsonToString($.ticket)"
+      },
+      "ResultPath": "$.sqs",
+      "Next": "NotifyQueued",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "ErrorRouter"
+        }
+      ]
+    },
+    "NotifyQueued": {
+      "Type": "Task",
+      "Comment": "SNS: job was queued successfully",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${alerts_topic_arn}",
+        "Subject": "Deep research job queued",
+        "Message.$": "States.Format('Job {} queued.\nQuestion: {}', $.job_id, $.question)"
+      },
+      "ResultPath": "$.sns",
+      "Next": "Done"
+    },
+    "Done": {
+      "Type": "Succeed"
+    },
+    "ErrorRouter": {
+      "Type": "Choice",
+      "Comment": "Duplicate job_id vs any other failure",
+      "Choices": [
+        {
+          "Variable": "$.error.Error",
+          "StringEquals": "DynamoDB.ConditionalCheckFailedException",
+          "Next": "NotifyDuplicate"
+        }
+      ],
+      "Default": "NotifyFailed"
+    },
+    "NotifyDuplicate": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${alerts_topic_arn}",
+        "Subject": "Deep research duplicate job_id",
+        "Message.$": "States.Format('Duplicate job_id rejected: {}', $.job_id)"
+      },
+      "ResultPath": "$.sns",
+      "Next": "DuplicateJob"
+    },
+    "NotifyFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${alerts_topic_arn}",
+        "Subject": "Deep research enqueue failed",
+        "Message.$": "States.Format('Enqueue failed for job {}.\nError: {}\nCause: {}', $.job_id, $.error.Error, $.error.Cause)"
+      },
+      "ResultPath": "$.sns",
+      "Next": "EnqueueFailed"
+    },
+    "DuplicateJob": {
+      "Type": "Fail",
+      "Error": "DuplicateJobId",
+      "Cause": "job_id already exists in DynamoDB"
+    },
+    "EnqueueFailed": {
+      "Type": "Fail",
+      "Error": "EnqueueFailed",
+      "Cause": "DynamoDB or SQS step failed after SNS alert"
+    }
+  }
+}
